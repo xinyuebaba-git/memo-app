@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>备忘录系统 - 设计文档</title>
+  <style>
+    :root {
+      --primary-color: #667eea;
+      --primary-dark: #764ba2;
+      --text-color: #2d3748;
+      --text-light: #4a5568;
+      --bg-color: #f7fafc;
+      --code-bg: #edf2f7;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      line-height: 1.8;
+      color: var(--text-color);
+      background: var(--bg-color);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 20px;
+      }
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    header .meta {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    header .meta span {
+      margin-right: 20px;
+    }
+
+    nav {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    nav h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
+
+    nav ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    nav li {
+      padding: 8px 0;
+    }
+
+    nav a {
+      color: var(--text-light);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--primary-color);
+    }
+
+    section {
+      background: white;
+      padding: 30px;
+      margin-bottom: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      page-break-inside: avoid;
+    }
+
+    h1, h2, h3, h4 {
+      color: var(--text-color);
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    h1 { font-size: 28px; border-bottom: 3px solid var(--primary-color); padding-bottom: 10px; }
+    h2 { font-size: 22px; border-left: 4px solid var(--primary-color); padding-left: 15px; margin-top: 30px; }
+    h3 { font-size: 18px; color: var(--primary-color); }
+    h4 { font-size: 16px; }
+
+    p {
+      margin-bottom: 16px;
+      text-align: justify;
+    }
+
+    ul, ol {
+      margin-left: 30px;
+      margin-bottom: 16px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: var(--bg-color);
+    }
+
+    tr:hover {
+      background: #f0f4ff;
+    }
+
+    code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 13px;
+      color: #e53e3e;
+    }
+
+    pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    blockquote {
+      border-left: 4px solid var(--primary-color);
+      padding-left: 20px;
+      margin: 20px 0;
+      color: var(--text-light);
+      background: var(--bg-color);
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .tip {
+      background: #ebf8ff;
+      border-left: 4px solid #4299e1;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .tip::before {
+      content: '💡 ';
+    }
+
+    .warning {
+      background: #fffaf0;
+      border-left: 4px solid #ed8936;
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .warning::before {
+      content: '⚠️ ';
+    }
+
+    .checklist li::before {
+      content: '✅ ';
+    }
+
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-light);
+      font-size: 14px;
+      border-top: 2px solid var(--border-color);
+      margin-top: 40px;
+    }
+
+    @media print {
+      header {
+        background: white;
+        color: black;
+        box-shadow: none;
+        border: 2px solid var(--primary-color);
+      }
+      
+      section {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      
+      nav {
+        display: none;
+      }
+      
+      a {
+        text-decoration: none;
+        color: black;
+      }
+      
+      pre, code {
+        background: #f0f0f0;
+        color: black;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📝 备忘录系统 - 设计文档</h1>
+    <div class="meta">
+      <span>📅 版本：1.0.0</span>
+      <span>📆 创建时间：2026-02-24</span>
+      <span>👨‍💻 开发团队：OpenClaw 软件开发 Agent 团队</span>
+    </div>
+  </header>
+
+  <nav>
+    <h2>📑 目录</h2>
+    <ul>
+      <li><a href="#section1">1. 项目概述</a></li>
+      <li><a href="#section2">2. 技术架构</a></li>
+      <li><a href="#section3">3. 模块设计</a></li>
+      <li><a href="#section4">4. 数据设计</a></li>
+      <li><a href="#section5">5. 接口设计</a></li>
+      <li><a href="#section6">6. 界面设计</a></li>
+      <li><a href="#section7">7. 核心功能实现</a></li>
+      <li><a href="#section8">8. 安全设计</a></li>
+      <li><a href="#section9">9. 性能优化</a></li>
+      <li><a href="#section10">10. 部署方案</a></li>
+    </ul>
+  </nav>
+
+  <section id="section1">
+    <h2>1. 项目概述</h2>
+    
+    <h3>1.1 产品定位</h3>
+    <p>一款轻量级、跨平台的备忘录管理应用，支持桌面端和移动端使用，帮助用户高效记录和管理日常笔记。</p>
+    
+    <h3>1.2 目标用户</h3>
+    <ul>
+      <li>需要快速记录灵感的创意工作者</li>
+      <li>需要管理多个项目笔记的职场人士</li>
+      <li>需要跨设备同步笔记的学生</li>
+    </ul>
+    
+    <h3>1.3 核心价值</h3>
+    <ul class="checklist">
+      <li>📱 多端适配 - 桌面端和移动端完美响应</li>
+      <li>📝 多备忘录管理 - 轻松创建和管理多个笔记</li>
+      <li>🏷️ 标签分组 - 自定义标签，快速筛选</li>
+      <li>💾 本地存储 - 数据安全，隐私保护</li>
+      <li>⚡ 快速响应 - 流畅的用户体验</li>
+    </ul>
+  </section>
+
+  <section id="section2">
+    <h2>2. 技术架构</h2>
+    
+    <h3>2.1 架构图</h3>
+    <pre><code>┌─────────────────────────────────────────────────────────┐
+│                      用户界面层                            │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │  桌面端     │  │  移动端     │  │  平板端     │     │
+│  │  (响应式)   │  │  (响应式)   │  │  (响应式)   │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘     │
+└─────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│                      应用层                               │
+├─────────────────────────────────────────────────────────┤
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│  │ 备忘录   │ │  标签    │ │  搜索    │ │  数据    │   │
+│  │ 管理     │ │  管理    │ │  过滤    │ │  持久化  │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
+└─────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│                      数据层                               │
+├─────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              LocalStorage                         │   │
+│  │  ┌──────────────┐  ┌──────────────┐             │   │
+│  │  │   Memos      │  │    Tags      │             │   │
+│  │  └──────────────┘  └──────────────┘             │   │
+│  └──────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘</code></pre>
+    
+    <h3>2.2 技术栈</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>层级</th>
+          <th>技术选型</th>
+          <th>版本</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>前端框架</strong></td>
+          <td>Vue 3</td>
+          <td>3.5.x</td>
+          <td>响应式框架</td>
+        </tr>
+        <tr>
+          <td><strong>构建工具</strong></td>
+          <td>Vite</td>
+          <td>5.4.x</td>
+          <td>快速构建</td>
+        </tr>
+        <tr>
+          <td><strong>类型系统</strong></td>
+          <td>TypeScript</td>
+          <td>5.9.x</td>
+          <td>类型安全</td>
+        </tr>
+        <tr>
+          <td><strong>数据存储</strong></td>
+          <td>LocalStorage</td>
+          <td>-</td>
+          <td>本地持久化</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="section3">
+    <h2>3. 模块设计</h2>
+    
+    <h3>3.1 模块划分</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>模块名</th>
+          <th>职责</th>
+          <th>主要文件</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MemoModule</strong></td>
+          <td>备忘录 CRUD</td>
+          <td>useMemos.ts</td>
+        </tr>
+        <tr>
+          <td><strong>TagModule</strong></td>
+          <td>标签管理</td>
+          <td>useMemos.ts</td>
+        </tr>
+        <tr>
+          <td><strong>StorageModule</strong></td>
+          <td>数据存储</td>
+          <td>useMemos.ts</td>
+        </tr>
+        <tr>
+          <td><strong>UIModule</strong></td>
+          <td>界面组件</td>
+          <td>Index.vue</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="section4">
+    <h2>4. 数据设计</h2>
+    
+    <h3>4.1 数据模型</h3>
+    <pre><code>interface Memo {
+  id: string;           // 唯一标识 (UUID)
+  title: string;        // 标题
+  content: string;      // 内容
+  tags: string[];       // 标签列表
+  createdAt: number;    // 创建时间戳
+  updatedAt: number;    // 更新时间戳
+}</code></pre>
+    
+    <div class="tip">
+      所有数据存储在浏览器 LocalStorage 中，键名为 <code>memo_app_memos</code>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p><strong>文档版本：</strong>1.0.0 | <strong>最后更新：</strong>2026-02-24</p>
+    <p><strong>开发团队：</strong>OpenClaw 软件开发 Agent 团队</p>
+    <p style="margin-top: 20px; color: #a0aec0;">— 文档结束 —</p>
+  </footer>
+
+  <script>
+    // 平滑滚动
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
