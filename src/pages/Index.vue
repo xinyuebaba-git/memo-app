@@ -8,13 +8,15 @@
       <div class="header-left">
         <h1 class="title">📝 备忘录</h1>
       </div>
+      <div class="header-center">
+        <button class="btn-primary" @click="goToCreate">
+          + 新建备忘录
+        </button>
+      </div>
       <div class="header-right">
         <span class="username" v-if="currentUser">👤 {{ currentUser.username }}</span>
-        <button class="btn-logout" @click="handleLogout" title="退出登录">
+        <button class="btn-logout" @click="showLogoutConfirm = true" title="退出登录">
           🚪 退出
-        </button>
-        <button class="btn-primary" @click="goToCreate">
-          + 新建
         </button>
       </div>
     </header>
@@ -100,6 +102,18 @@
       </div>
     </div>
 
+    <!-- 退出登录确认对话框 -->
+    <div v-if="showLogoutConfirm" class="modal-overlay" @click="showLogoutConfirm = false">
+      <div class="modal" @click.stop>
+        <h3>🚪 确认退出</h3>
+        <p>确定要退出登录吗？</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="showLogoutConfirm = false">取消</button>
+          <button class="btn-danger" @click="handleLogoutConfirm">退出</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 创建/编辑备忘录弹窗 -->
     <div v-if="showEditor" class="modal-overlay" @click="cancelEdit">
       <div class="modal modal-large" @click.stop>
@@ -170,6 +184,7 @@ const currentUser = computed(() => authState.user)
 const selectedTag = ref('all')
 const searchKeyword = ref('')
 const showDeleteConfirm = ref(false)
+const showLogoutConfirm = ref(false)
 const memoToDelete = ref<Memo | null>(null)
 
 // 编辑器相关
@@ -198,12 +213,16 @@ const filteredMemos = computed(() => {
   return result
 })
 
-// 退出登录
-const handleLogout = () => {
-  if (confirm('确定要退出登录吗？')) {
-    logout()
-    router.push('/login')
-  }
+// 显示退出确认弹窗
+const showLogoutConfirmDialog = () => {
+  showLogoutConfirm.value = true
+}
+
+// 确认退出登录
+const handleLogoutConfirm = () => {
+  logout()
+  showLogoutConfirm.value = false
+  router.push('/login')
 }
 
 // 打开创建弹窗
@@ -335,16 +354,27 @@ const formatTime = (timestamp: number) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  flex: 1;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex: 1;
   gap: 12px;
 }
 
@@ -364,26 +394,35 @@ const formatTime = (timestamp: number) => {
   background: #f5f5f5;
   color: #666;
   border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-
-.btn-logout:hover {
-  background: #e0e0e0;
-  color: #333;
-}
-
-.btn-primary {
-  background: #3498db;
-  color: white;
-  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
+  transition: all 0.2s;
+  margin-left: 40px;
+}
+
+.btn-logout:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .tag-filter {

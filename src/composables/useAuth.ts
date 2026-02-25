@@ -13,25 +13,57 @@ const authState = reactive<AuthState>({
   token: null
 });
 
+// 用户存储键名
+const USERS_STORAGE_KEY = 'memo_app_users';
+
+// 获取所有用户
+const getAllUsers = (): User[] => {
+  const users = localStorage.getItem(USERS_STORAGE_KEY);
+  return users ? JSON.parse(users) : [];
+};
+
+// 保存所有用户
+const saveAllUsers = (users: User[]) => {
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+};
+
+// 查找用户
+const findUser = (username: string): User | undefined => {
+  const users = getAllUsers();
+  return users.find(u => u.username === username);
+};
+
 // 模拟注册 API 调用
 const mockRegister = async (registerData: RegisterData): Promise<{ user: User; token: string }> => {
   // 模拟 API 延迟
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // 简单验证
-  if (registerData.username && registerData.password && registerData.confirmPassword) {
-    const user: User = {
-      id: String(Date.now()),
-      username: registerData.username,
-      password: btoa(registerData.password) // 简单加密
-    };
-    
-    const token = `mock-jwt-token-${Date.now()}`;
-    
-    return { user, token };
+  // 验证密码一致性
+  if (registerData.password !== registerData.confirmPassword) {
+    throw new Error('两次输入的密码不一致');
   }
   
-  throw new Error('Registration failed');
+  // 检查用户名是否已存在
+  const existingUser = findUser(registerData.username);
+  if (existingUser) {
+    throw new Error('用户名已存在');
+  }
+  
+  // 创建新用户
+  const user: User = {
+    id: String(Date.now()),
+    username: registerData.username,
+    password: btoa(registerData.password) // Base64 编码
+  };
+  
+  // 保存到 localStorage
+  const users = getAllUsers();
+  users.push(user);
+  saveAllUsers(users);
+  
+  const token = `mock-jwt-token-${Date.now()}`;
+  
+  return { user, token };
 };
 
 // 模拟登录 API 调用
@@ -39,20 +71,22 @@ const mockLogin = async (credentials: LoginCredentials): Promise<{ user: User; t
   // 模拟 API 延迟
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // 简单验证
-  if (credentials.username && credentials.password) {
-    const user: User = {
-      id: '1',
-      username: credentials.username,
-      password: btoa(credentials.password)
-    };
-    
-    const token = `mock-jwt-token-${Date.now()}`;
-    
-    return { user, token };
+  // 查找用户
+  const user = findUser(credentials.username);
+  
+  if (!user) {
+    throw new Error('用户名不存在');
   }
   
-  throw new Error('Invalid credentials');
+  // 验证密码
+  const encodedPassword = btoa(credentials.password);
+  if (user.password !== encodedPassword) {
+    throw new Error('密码错误');
+  }
+  
+  const token = `mock-jwt-token-${Date.now()}`;
+  
+  return { user: { ...user, password: undefined }, token }; // 不返回密码
 };
 
 export const useAuth = () => {
