@@ -1,25 +1,87 @@
 // 备忘录数据管理 Composable
 // composables/useMemos.ts
+// 🔐 已添加 AES 加密保护
 
 import { ref, computed } from 'vue'
 import type { Memo, CreateMemoDTO, UpdateMemoDTO } from '../types/memo'
+import { encryptData, decryptData } from '../utils/crypto'
 
 const STORAGE_KEY = 'memo_app_memos'
+const ENCRYPTION_ENABLED_KEY = 'memo_app_encryption_enabled'
+
+// 检查是否启用加密
+const isEncryptionEnabled = (): boolean => {
+  return localStorage.getItem(ENCRYPTION_ENABLED_KEY) === 'true'
+}
 
 // 从 LocalStorage 加载备忘录
 function loadMemos(): Memo[] {
   const data = localStorage.getItem(STORAGE_KEY)
-  return data ? JSON.parse(data) : []
+  if (!data) return []
+  
+  try {
+    // 🔐 如果启用加密，先解密数据
+    if (isEncryptionEnabled()) {
+      const decrypted = decryptData(data)
+      return decrypted ? JSON.parse(decrypted) : []
+    }
+    return JSON.parse(data)
+  } catch (error) {
+    console.error('Failed to load memos:', error)
+    return []
+  }
 }
 
 // 保存备忘录到 LocalStorage
 function saveMemos(memos: Memo[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(memos))
+  try {
+    const data = JSON.stringify(memos)
+    // 🔐 如果启用加密，先加密数据
+    if (isEncryptionEnabled()) {
+      const encrypted = encryptData(data)
+      localStorage.setItem(STORAGE_KEY, encrypted)
+    } else {
+      localStorage.setItem(STORAGE_KEY, data)
+    }
+  } catch (error) {
+    console.error('Failed to save memos:', error)
+  }
 }
 
 // 生成唯一 ID
 function generateId(): string {
   return `memo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
+// 🔐 启用加密（迁移现有数据）
+export const enableEncryption = (): boolean => {
+  try {
+    const existingMemos = loadMemos()
+    localStorage.setItem(ENCRYPTION_ENABLED_KEY, 'true')
+    saveMemos(existingMemos)
+    return true
+  } catch (error) {
+    console.error('Failed to enable encryption:', error)
+    return false
+  }
+}
+
+// 🔐 禁用加密（解密所有数据）
+export const disableEncryption = (): boolean => {
+  try {
+    const existingMemos = loadMemos()
+    localStorage.setItem(ENCRYPTION_ENABLED_KEY, 'false')
+    saveMemos(existingMemos)
+    return true
+  } catch (error) {
+    console.error('Failed to disable encryption:', error)
+    return false
+  }
+}
+
+// 🔐 检查加密状态
+export const getEncryptionStatus = (): boolean => {
+  return isEncryptionEnabled()
 }
 
 export function useMemos() {

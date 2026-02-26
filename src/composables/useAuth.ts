@@ -1,5 +1,6 @@
 import { ref, reactive, readonly } from 'vue';
 import type { User, LoginCredentials, RegisterData } from '../types/auth';
+import { hashPassword, verifyPassword } from '../utils/crypto';
 
 interface AuthState {
   user: User | null;
@@ -49,11 +50,14 @@ const mockRegister = async (registerData: RegisterData): Promise<{ user: User; t
     throw new Error('用户名已存在');
   }
   
+  // 🔐 使用 bcrypt 哈希密码（替代 Base64 编码）
+  const hashedPassword = await hashPassword(registerData.password);
+  
   // 创建新用户
   const user: User = {
     id: String(Date.now()),
     username: registerData.username,
-    password: btoa(registerData.password) // Base64 编码
+    password: hashedPassword // 存储哈希后的密码
   };
   
   // 保存到 localStorage
@@ -78,9 +82,9 @@ const mockLogin = async (credentials: LoginCredentials): Promise<{ user: User; t
     throw new Error('用户名不存在');
   }
   
-  // 验证密码
-  const encodedPassword = btoa(credentials.password);
-  if (user.password !== encodedPassword) {
+  // 🔐 使用 bcrypt 验证密码（替代 Base64 解码比较）
+  const isValid = await verifyPassword(credentials.password, user.password);
+  if (!isValid) {
     throw new Error('密码错误');
   }
   

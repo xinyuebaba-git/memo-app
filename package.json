@@ -1,13 +1,16 @@
 {
   "name": "memo-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
+  "description": "备忘录应用（带登录和加密功能）",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "crypto-js": "^4.2.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.0"
   },
