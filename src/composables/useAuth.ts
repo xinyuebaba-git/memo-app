@@ -1,6 +1,8 @@
 import { ref, reactive, readonly } from 'vue';
 import type { User, LoginCredentials, RegisterData } from '../types/auth';
 import { hashPassword, verifyPassword } from '../utils/crypto';
+import { loadAndMigrateData, backupData } from '../utils/migration';
+import { STORAGE_KEYS } from '../types/schema';
 
 interface AuthState {
   user: User | null;
@@ -14,23 +16,38 @@ const authState = reactive<AuthState>({
   token: null
 });
 
-// 用户存储键名
+// 用户存储键名（已废弃，保留用于迁移）
 const USERS_STORAGE_KEY = 'memo_app_users';
 
-// 获取所有用户
-const getAllUsers = (): User[] => {
-  const users = localStorage.getItem(USERS_STORAGE_KEY);
-  return users ? JSON.parse(users) : [];
+// 获取所有用户（从新结构）
+const getAllUsers = async (): Promise<User[]> => {
+  try {
+    const data = await loadAndMigrateData();
+    return data.users || [];
+  } catch (error) {
+    console.error('获取用户失败:', error);
+    return [];
+  }
 };
 
-// 保存所有用户
+// 保存所有用户（到新结构）
 const saveAllUsers = (users: User[]) => {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  try {
+    const rawData = localStorage.getItem(STORAGE_KEYS.DATA);
+    let data: any = rawData ? JSON.parse(rawData) : {};
+    
+    data.users = users;
+    data.updatedAt = Date.now();
+    
+    localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(data));
+  } catch (error) {
+    console.error('保存用户失败:', error);
+  }
 };
 
 // 查找用户
-const findUser = (username: string): User | undefined => {
-  const users = getAllUsers();
+const findUser = async (username: string): Promise<User | undefined> => {
+  const users = await getAllUsers();
   return users.find(u => u.username === username);
 };
 
@@ -45,25 +62,25 @@ const mockRegister = async (registerData: RegisterData): Promise<{ user: User; t
   }
   
   // 检查用户名是否已存在
-  const existingUser = findUser(registerData.username);
+  const existingUser = await findUser(registerData.username);
   if (existingUser) {
     throw new Error('用户名已存在');
   }
   
-  // 🔐 使用 bcrypt 哈希密码（替代 Base64 编码）
+  // 🔐 使用 bcrypt 哈希密码
   const hashedPassword = await hashPassword(registerData.password);
   
   // 创建新用户
   const user: User = {
     id: String(Date.now()),
     username: registerData.username,
-    password: hashedPassword // 存储哈希后的密码
+    password: hashedPassword
   };
   
   // 保存到 localStorage
-  const users = getAllUsers();
+  const users = await getAllUsers();
   users.push(user);
-  saveAllUsers(users);
+  await saveAllUsers(users);
   
   const token = `mock-jwt-token-${Date.now()}`;
   
@@ -76,13 +93,13 @@ const mockLogin = async (credentials: LoginCredentials): Promise<{ user: User; t
   await new Promise(resolve => setTimeout(resolve, 500));
   
   // 查找用户
-  const user = findUser(credentials.username);
+  const user = await findUser(credentials.username);
   
   if (!user) {
     throw new Error('用户名不存在');
   }
   
-  // 🔐 使用 bcrypt 验证密码（替代 Base64 解码比较）
+  // 🔐 验证密码
   const isValid = await verifyPassword(credentials.password, user.password);
   if (!isValid) {
     throw new Error('密码错误');
@@ -90,7 +107,7 @@ const mockLogin = async (credentials: LoginCredentials): Promise<{ user: User; t
   
   const token = `mock-jwt-token-${Date.now()}`;
   
-  return { user: { ...user, password: undefined }, token }; // 不返回密码
+  return { user: { ...user, password: undefined }, token };
 };
 
 export const useAuth = () => {
